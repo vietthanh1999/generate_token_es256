@@ -9,6 +9,14 @@ import (
   "crypto/x509"
 )
 
+type Body struct {
+	// json tag to de-serialize json body
+	AppName string `json:"appName"`
+	AppUserId string `json:"appUserId"`
+	ContentId string `json:"contentId"`
+	SecretKey string `json:"secretKey"`
+}
+
 func main() {
   r := gin.Default()
 
@@ -25,11 +33,12 @@ func main() {
   })
 
   r.POST("/generate-token", func(c *gin.Context) {
-	appName := c.DefaultPostForm("appName", "")
-	appUserId := c.DefaultPostForm("appUserId", "")
-	contentId := c.DefaultPostForm("contentId", "")
-	secretKey := c.DefaultPostForm("secretKey", "")
-	token, _ := generateJWT(appName, appUserId, contentId, secretKey)
+	body:=Body{}
+	if err:=c.BindJSON(&body); err!=nil {
+		c.AbortWithError(http.StatusBadRequest,err)
+	   return
+	}
+	token, _ := generateJWT(body.AppName, body.AppUserId, body.ContentId, body.SecretKey)
 
     c.JSON(http.StatusOK, gin.H{
       "token": token,

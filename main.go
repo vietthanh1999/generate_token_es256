@@ -7,13 +7,15 @@ import (
   "time"
   "encoding/pem"
   "crypto/x509"
+  "os"
+  "math/rand"
 )
 
 type Body struct {
 	// json tag to de-serialize json body
 	AppName string `json:"appName"`
-	AppUserId string `json:"appUserId"`
-	ContentId string `json:"contentId"`
+	AppUserIdList []string `json:"AppUserIdList"`
+	ContentIdList []string `json:"ContentIdList"`
 	SecretKey string `json:"secretKey"`
 }
 
@@ -27,8 +29,9 @@ func main() {
   })
 
   r.GET("/ping", func(c *gin.Context) {
+	srvName := os.Getenv("SERVICE_NAME")
     c.JSON(http.StatusOK, gin.H{
-      "message": "pong",
+      "message": srvName,
     })
   })
 
@@ -38,10 +41,14 @@ func main() {
 		c.AbortWithError(http.StatusBadRequest,err)
 	   return
 	}
-	token, _ := generateJWT(body.AppName, body.AppUserId, body.ContentId, body.SecretKey)
+	tokenList := []string{}
+	for i := 1; i < len(body.AppUserIdList); i++ {
+		token, _ := generateJWT(body.AppName, body.AppUserIdList[i], body.ContentIdList[rand.Intn(len(body.ContentIdList))], body.SecretKey)
+		tokenList = append(tokenList, token)
+	}
 
     c.JSON(http.StatusOK, gin.H{
-      "token": token,
+      "token": tokenList,
     })
   })
   r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
